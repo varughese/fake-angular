@@ -1,3 +1,5 @@
+function initWatchVal() { }
+
 function Scope() {
     this.$$watchers = [];
 }
@@ -5,13 +7,23 @@ function Scope() {
 Scope.prototype.$watch = function(watchFn, listenerFn) {
     var watcher = {
         watchFn: watchFn,
-        listenerFn: listenerFn
+        listenerFn: listenerFn,
+        last: initWatchVal
     };
     this.$$watchers.push(watcher);
 };
 
 Scope.prototype.$digest = function() {
+    var self = this;
+    var newValue, oldValue;
     _.forEach(this.$$watchers, function(watcher) {
-        watcher.listenerFn();
+        newValue = watcher.watchFn(self);
+        oldValue = watcher.last;
+        if(oldValue !== newValue) {
+            watcher.last = newValue;
+            watcher.listenerFn(newValue,
+                (oldValue === initWatchVal) ? newValue : oldValue,
+                self);
+        }
     });
 };
