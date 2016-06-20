@@ -173,5 +173,78 @@ describe("Scope", function() {
             scope.$digest();
             expect(scope.counter).toBe(1);
         });
+
+        it("compares based on value if enabled", function() {
+            scope.aValue = [1, 2, 3];
+            scope.counter = 0;
+            scope.$watch(
+                function(scope) {
+                    return scope.aValue;
+                },
+                function(newValue, oldValue, scope) {
+                    scope.counter++;
+                },
+                true
+            );
+            scope.$digest();
+            expect(scope.counter).toBe(1);
+            scope.aValue.push(4);
+            scope.$digest();
+            expect(scope.counter).toBe(2);
+        });
+
+        it("correctly handles NaNs", function() {
+            scope.number = 0 / 0; // NaN
+            scope.counter = 0;
+            scope.$watch(
+                function(scope) {
+                    return scope.number;
+                },
+                function(newValue, oldValue, scope) {
+                    scope.counter++;
+                }
+            );
+            scope.$digest();
+            expect(scope.counter).toBe(1);
+            scope.$digest();
+            expect(scope.counter).toBe(1);
+        });
+
+        describe("$eval", function() {
+            it("executes $eval'ed function and returns result", function() {
+                scope.aValue = 42;
+                var result = scope.$eval(function(scope) {
+                    return scope.aValue;
+                });
+                expect(result).toBe(42);
+            });
+            it("passes the second $eval argument straight through", function() {
+                scope.aValue = 42;
+                var result = scope.$eval(function(scope, arg) {
+                    return scope.aValue + arg;
+                }, 2);
+                expect(result).toBe(44);
+            });
+        });
+        
+        it("executes $apply'ed function and starts the digest", function() {
+            scope.aValue = 'someValue';
+            scope.counter = 0;
+            scope.$watch(
+                function(scope) {
+                    return scope.aValue;
+                },
+                function(newValue, oldValue, scope) {
+                    scope.counter++;
+                }
+            );
+            scope.$digest();
+            expect(scope.counter).toBe(1);
+            scope.$apply(function(scope) {
+                scope.aValue = 'someOtherValue';
+            });
+            expect(scope.counter).toBe(2);
+        });
     });
+
 });
