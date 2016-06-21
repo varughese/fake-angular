@@ -6,6 +6,7 @@ function Scope() {
     this.$$asyncQueue = [];
     this.$$applyAsyncQueue = [];
     this.$$applyAsyncId = null;
+    this.$$children = [];
     this.$$phase = null;
 }
 
@@ -21,7 +22,7 @@ Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
     this.$$lastDirtyWatch = null;
     return function() {
         var index = self.$$watchers.indexOf(watcher);
-        if(index >= 0) {
+        if (index >= 0) {
             self.$$watchers.splice(index, 1);
             self.$$lastDirtyWatch = null;
         }
@@ -140,4 +141,25 @@ Scope.prototype.$$flushApplyAsync = function() {
         this.$$applyAsyncQueue.shift()();
     }
     this.$$applyAsyncId = null;
+};
+
+Scope.prototype.$watchGroup = function(watchFns, listenerFn) {
+    var self = this;
+    var newValues = new Array(watchFns.length);
+    var oldValues = new Array(watchFns.length);
+    _.forEach(watchFns, function(watchFn, i) {
+        self.$watch(watchFn, function(newValue, oldValue) {
+            newValues[i] = newValue;
+            oldValues[i] = oldValue;
+            listenerFn(newValues, oldValues, self);
+        });
+    });
+};
+
+Scope.prototype.$new = function() {
+    var child = Object.create(this);
+    this.$$children.push(child);
+    child.$$watchers = [];
+    child.$$children = [];
+    return child;
 };
