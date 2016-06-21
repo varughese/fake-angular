@@ -164,20 +164,39 @@ Scope.prototype.$watchGroup = function(watchFns, listenerFn) {
     });
 };
 
-Scope.prototype.$new = function() {
-    var child = Object.create(this);
-    this.$$children.push(child);
+Scope.prototype.$new = function(isolated, parent) {
+    var child;
+    parent = parent || this;
+    if (isolated) {
+        child = new Scope();
+        child.$root = parent.$root;
+    } else {
+        child = Object.create(this);
+    }
+    parent.$$children.push(child);
     child.$$watchers = [];
     child.$$children = [];
+    child.$parent = parent;
     return child;
 };
 
 Scope.prototype.$$everyScope = function(fn) {
-    if(fn(this)) {
+    if (fn(this)) {
         return this.$$children.every(function(child) {
             return child.$$everyScope(fn);
         });
     } else {
         return false;
     }
+};
+
+Scope.prototype.$destroy = function() {
+    if (this.$parent) {
+        var siblings = this.$parent.$$children;
+        var indexOfThis = siblings.indexOf(this);
+        if (indexOfThis >= 0) {
+            siblings.splice(indexOfThis, 1);
+        }
+    }
+    this.$$watchers = null;
 };
